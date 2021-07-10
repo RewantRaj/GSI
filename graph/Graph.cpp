@@ -11,7 +11,7 @@
 using namespace std;
 
 
-uint32_t hash(const void * key, int len, uint32_t seed) 
+uint32_t cudahash(const void * key, int len, uint32_t seed) 
 {
     return Util::MurmurHash2(key, len, seed);
 }
@@ -20,14 +20,14 @@ uint32_t hash(const void * key, int len, uint32_t seed)
 void 
 Graph::addVertex(LABEL _vlb)
 {
-	this->vertices.push_back(Vertex(_vlb));
+    this->vertices.push_back(Vertex(_vlb));
 }
 
 void 
 Graph::addEdge(VID _from, VID _to, LABEL _elb)
 {
-	this->vertices[_from].out.push_back(Neighbor(_to, _elb));
-	this->vertices[_to].in.push_back(Neighbor(_from, _elb));
+    this->vertices[_from].out.push_back(Neighbor(_to, _elb));
+    this->vertices[_to].in.push_back(Neighbor(_from, _elb));
 }
 
 
@@ -42,8 +42,8 @@ Graph::preprocessing(bool column_oriented)
     this->buildSignature(column_oriented);
     long t2 = Util::get_cur_time();
     printf("time of preprocessing(not included in matching): %ld ms\n", t2-t1);
-	//now we can release the memory of original structure 
-	//this->vertices.clear();
+    //now we can release the memory of original structure 
+    //this->vertices.clear();
 }
 
 void
@@ -59,7 +59,7 @@ Graph::buildSignature(bool column_oriented)
     for(int i = 0; i < this->vertex_num; ++i)
     {
         Vertex& v = this->vertices[i];
-        int pos = hash(&(v.label), 4, HASHSEED) % VLEN;
+        int pos = cudahash(&(v.label), 4, HASHSEED) % VLEN;
         signature_table[signum*i] = 1 << pos;
         for(int j = 0; j < v.in.size(); ++j)
         {
@@ -67,7 +67,7 @@ Graph::buildSignature(bool column_oriented)
             int sig[2];
             sig[0] = this->vertices[nb.vid].label;
             sig[1] = nb.elb;
-            pos = hash(sig, 8, HASHSEED) % gnum;
+            pos = cudahash(sig, 8, HASHSEED) % gnum;
             int a = pos / 16, b = pos % 16;
             unsigned t = signature_table[signum*i+1+a];
             unsigned c = 3 << (2*b);
@@ -95,7 +95,7 @@ Graph::buildSignature(bool column_oriented)
             int sig[2];
             sig[0] = this->vertices[nb.vid].label;
             sig[1] = -nb.elb;
-            int pos = hash(sig, 8, HASHSEED) % gnum;
+            int pos = cudahash(sig, 8, HASHSEED) % gnum;
             int a = pos / 16, b = pos % 16;
             unsigned t = signature_table[signum*i+1+a];
             unsigned c = 3 << (2*b);
@@ -160,11 +160,11 @@ Graph::buildSignature(bool column_oriented)
 void 
 Graph::transformToCSR()
 {
-	this->vertex_num = this->vertices.size();
-	this->vertex_value = new unsigned[this->vertex_num];
-	for(int i = 0; i < this->vertex_num; ++i)
-	{
-		this->vertex_value[i] = this->vertices[i].label;
+    this->vertex_num = this->vertices.size();
+    this->vertex_value = new unsigned[this->vertex_num];
+    for(int i = 0; i < this->vertex_num; ++i)
+    {
+        this->vertex_value[i] = this->vertices[i].label;
         //sort on label, when label is identical, sort on VID
         sort(this->vertices[i].in.begin(), this->vertices[i].in.end());
         sort(this->vertices[i].out.begin(), this->vertices[i].out.end());
@@ -175,7 +175,7 @@ Graph::transformToCSR()
     this->csrs_out = new PCSR[this->edgeLabelNum+1];
     vector<unsigned>* keys_in = new vector<unsigned>[this->edgeLabelNum+1];
     vector<unsigned>* keys_out = new vector<unsigned>[this->edgeLabelNum+1];
-	for(int i = 0; i < this->vertex_num; ++i)
+    for(int i = 0; i < this->vertex_num; ++i)
     {
         int insize = this->vertices[i].in.size(), outsize = this->vertices[i].out.size();
         for(int j = 0; j < insize; ++j)
@@ -253,7 +253,7 @@ Graph::buildPCSR(PCSR* pcsr, vector<unsigned>& keys, int label, bool incoming)
     for(int i = 0; i < key_num; ++i)
     {
         unsigned id = keys[i];
-        unsigned pos = hash(&id, 4, HASHSEED) % key_num;
+        unsigned pos = cudahash(&id, 4, HASHSEED) % key_num;
         buckets[pos].push_back(id);
     }
     queue<unsigned> empty_buckets;
@@ -352,11 +352,11 @@ Graph::countMaxDegree()
 void 
 Graph::printGraph()
 {
-	int i, n = this->vertex_num;
-	cout<<"vertex value:"<<endl;
-	for(i = 0; i < n; ++i)
-	{
-		cout<<this->vertex_value[i]<<" ";
-	}cout<<endl;
+    int i, n = this->vertex_num;
+    cout<<"vertex value:"<<endl;
+    for(i = 0; i < n; ++i)
+    {
+        cout<<this->vertex_value[i]<<" ";
+    }cout<<endl;
 }
 
