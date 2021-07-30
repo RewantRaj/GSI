@@ -88,7 +88,7 @@ IO::input(FILE* fp)
 			//This may cause too many matchings, if to reduce, only add the first one
 			//ng->addEdge(id1, id2, lb+1);
 			ng->addEdge(id1, id2, lb);
-			//ng->addEdge(id2, id1, lb);
+			ng->addEdge(id2, id1, lb);
 		}
 		else 
 		{
