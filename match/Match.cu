@@ -73,7 +73,13 @@ Match::initGPU(int dev)
         fprintf(stderr, "error: no devices supporting CUDA.\n");
         exit(EXIT_FAILURE);
     }
-    cudaSetDevice(dev);
+    if(dev < deviceCount)
+        cudaSetDevice(dev);
+    else
+    {
+        fprintf(stderr, "error: selected a number greater than the available devices.\n");
+        exit(EXIT_FAILURE);
+    }
 	//NOTE: 48KB shared memory per block, 1024 threads per block, 30 SMs and 128 cores per SM
     cudaDeviceProp devProps;
     if (cudaGetDeviceProperties(&devProps, dev) == 0)
